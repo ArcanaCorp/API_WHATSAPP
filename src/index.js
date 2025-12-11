@@ -15,27 +15,15 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 app.use(express.static('public')); // sirve index.html
 
-// Configuración de WhatsApp para cloud
+// Configuración del cliente WhatsApp
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--single-process',
-            '--disable-gpu'
-        ]
-    }
+    puppeteer: { headless: true } // usa Chromium portable
 });
 
 client.on('qr', async qr => {
     const qrDataUrl = await qrcode.toDataURL(qr);
-    io.emit('qr', qrDataUrl); // envía QR en tiempo real a todos los clientes conectados
+    io.emit('qr', qrDataUrl); // envia QR en tiempo real
 });
 
 client.on('ready', () => {
@@ -48,7 +36,6 @@ client.initialize();
 // API para enviar mensaje
 app.post('/send', async (req, res) => {
     const { number, text } = req.body;
-
     if (!number || !text) return res.status(400).json({ error: 'Faltan parámetros' });
 
     try {
