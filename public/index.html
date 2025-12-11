@@ -7,22 +7,60 @@
     <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
+    
     <h2>Escanea el QR para iniciar sesión</h2>
+    <button id="btn-qr">Solicitar QR</button>
     <div id="qr"></div>
-    <div id="status">Esperando QR...</div>
+    <div id="status">QR pendiente...</div>
+    <hr>
+    <h3>Enviar mensaje</h3>
+    <input type="text" id="number" placeholder="Número (519XXXXXXXX)">
+    <input type="text" id="text" placeholder="Mensaje">
+    <button id="btn-send">Enviar</button>
+    <div id="send-status"></div>
 
     <script>
         const socket = io();
 
+        // Cuando recibimos el QR
         socket.on('qr', qrDataUrl => {
             document.getElementById('qr').innerHTML = `<img src="${qrDataUrl}" />`;
             document.getElementById('status').textContent = 'QR generado';
         });
 
+        // Cuando WhatsApp está listo
         socket.on('ready', () => {
             document.getElementById('status').textContent = 'WhatsApp listo!';
             document.getElementById('qr').innerHTML = '';
         });
+
+        // Botón para solicitar QR
+        document.getElementById('btn-qr').addEventListener('click', () => {
+            document.getElementById('status').textContent = 'Generando QR...';
+            socket.emit('request-qr');
+        });
+
+        // Enviar mensaje vía API
+        document.getElementById('btn-send').addEventListener('click', async () => {
+            const number = document.getElementById('number').value;
+            const text = document.getElementById('text').value;
+            if (!number || !text) return alert('Completa ambos campos');
+
+            try {
+                const res = await fetch('/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ number, text })
+                });
+                const data = await res.json();
+                document.getElementById('send-status').textContent = data.success ? 'Mensaje enviado!' : 'Error al enviar';
+            } catch (err) {
+                document.getElementById('send-status').textContent = 'Error al enviar';
+                console.error(err);
+            }
+        });
+
     </script>
+
 </body>
 </html>
