@@ -17,7 +17,7 @@ app.use(express.static('public')); // sirve index.html
 
 // Configuración del cliente WhatsApp
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({ clientId: 'unique_client_id' }),
     puppeteer: { headless: true } // usa Chromium portable
 });
 
