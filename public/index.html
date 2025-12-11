@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API WhatsApp</title>
+</head>
+<body>
+    <h2>Escanea el QR para iniciar sesión</h2>
+    <div id="qr"></div>
+    <script>
+        async function fetchQR() {
+            const res = await fetch('/qr');
+            const html = await res.text();
+            document.getElementById('qr').innerHTML = html;
+        }
+
+        // Actualiza cada 3 segundos
+        setInterval(fetchQR, 3000);
+        fetchQR();
+    </script>
+</body>
+</html>
