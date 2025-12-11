@@ -2,41 +2,50 @@ import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 
 import express from 'express';
+import http from 'http';
+import { Server as SocketIO } from 'socket.io';
 import qrcode from 'qrcode';
 
 const app = express();
-const port = 3000;
+const server = http.createServer(app);
+const io = new SocketIO(server);
+
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static('public')); // servir index.html
+app.use(express.static('public')); // sirve index.html
 
-// Cliente WhatsApp
+// Configuración de WhatsApp para cloud
 const client = new Client({
-    authStrategy: new LocalAuth() // guarda sesión localmente
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',
+            '--disable-gpu'
+        ]
+    }
 });
 
-let qrCodeData = null;
-
-// Generar QR y actualizar variable
 client.on('qr', async qr => {
-    qrCodeData = await qrcode.toDataURL(qr); // QR como imagen en base64
+    const qrDataUrl = await qrcode.toDataURL(qr);
+    io.emit('qr', qrDataUrl); // envía QR en tiempo real a todos los clientes conectados
 });
 
-// Mensaje de sesión listo
 client.on('ready', () => {
     console.log('WhatsApp listo!');
+    io.emit('ready');
 });
 
-// Inicializar cliente
 client.initialize();
 
-// Endpoint para obtener QR
-app.get('/qr', (req, res) => {
-    if (!qrCodeData) return res.send('QR no disponible todavía. Recarga en unos segundos.');
-    res.send(`<img src="${qrCodeData}" />`);
-});
-
-// Endpoint para enviar mensaje
+// API para enviar mensaje
 app.post('/send', async (req, res) => {
     const { number, text } = req.body;
 
@@ -52,4 +61,9 @@ app.post('/send', async (req, res) => {
     }
 });
 
-app.listen(port, () => console.log(`Servidor corriendo en http://localhost:${port}`));
+// Socket.io para conexiones en tiempo real
+io.on('connection', socket => {
+    console.log('Cliente conectado al socket');
+});
+
+server.listen(PORT, () => console.log(`Servidor corriendo en http://localhost:${PORT}`));

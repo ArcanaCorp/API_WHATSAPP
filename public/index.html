@@ -4,20 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API WhatsApp</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <h2>Escanea el QR para iniciar sesión</h2>
     <div id="qr"></div>
-    <script>
-        async function fetchQR() {
-            const res = await fetch('/qr');
-            const html = await res.text();
-            document.getElementById('qr').innerHTML = html;
-        }
+    <div id="status">Esperando QR...</div>
 
-        // Actualiza cada 3 segundos
-        setInterval(fetchQR, 3000);
-        fetchQR();
+    <script>
+        const socket = io();
+
+        socket.on('qr', qrDataUrl => {
+            document.getElementById('qr').innerHTML = `<img src="${qrDataUrl}" />`;
+            document.getElementById('status').textContent = 'QR generado';
+        });
+
+        socket.on('ready', () => {
+            document.getElementById('status').textContent = 'WhatsApp listo!';
+            document.getElementById('qr').innerHTML = '';
+        });
     </script>
 </body>
 </html>
